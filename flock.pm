@@ -4,7 +4,7 @@ use warnings;
 use base qw(IO::File Exporter);
 use Fcntl qw(:flock);
 use Carp;
-our $VERSION		= '0.07';
+our $VERSION		= '0.09';
 our $DEBUG			= 0;
 our @EXPORT			= qw();
 our %EXPORT_TAGS	= (
@@ -12,26 +12,22 @@ our %EXPORT_TAGS	= (
 );
 our @EXPORT_OK		= ( map { @{$EXPORT_TAGS{$_}} } keys %EXPORT_TAGS );
 #####  override open method , add argument lock mode.
-sub class	{ref($_[0])||$_[0]||'IO::File::flock'}
-sub new		{(shift()->class->SUPER::new())->init(@_)}
-sub init	{shift()->open(@_)	if(@_ > 1);}
-sub open {
+sub class	:method {ref($_[0])||$_[0]||'IO::File::flock'}
+sub new		:method {(shift()->class->SUPER::new())->init(@_)}
+sub init	:method {shift()->open(@_)	if(@_ > 1);}
+sub open	:method {
 	my $fh		= shift;
 	my $file	= shift || return;
 	my $mode	= shift;
-	my $permit	= shift;
 	$file		= IO::Handle::_open_mode_string($mode) . $file	if($mode);
 
-	my @param;
-	push(@param,$file);
-	push(@param,$permit)	if($permit);
-	$fh->SUPER::open(@param) or return;
+	$fh->SUPER::open($file) or return;
 
 	my $lock	= (defined $_[0]) ? $_[0] : ($file =~ /^(\+?>|\+<)/) ? LOCK_EX : LOCK_SH;
 	return $fh->flock($lock,$_[1]);
 }
 ##### flock oop i/f
-sub flock :method {
+sub flock	:method {
 	my $fh		= shift;
 	my $lock	= shift;
 	my $timeout	= shift;
@@ -40,21 +36,23 @@ sub flock :method {
 	return $fh;
 }
 ##### flock easy i/f
-sub lock_sh		{shift()->flock(LOCK_SH)}
-sub lock_ex		{shift()->flock(LOCK_EX)}
-sub lock_un		{shift()->flock(LOCK_UN)}
-sub flock_		{CORE::flock(shift,shift)}
-sub set_flock {
+sub lock_sh		:method {shift()->flock(LOCK_SH)}
+sub lock_ex		:method {shift()->flock(LOCK_EX)}
+sub lock_un		:method {shift()->flock(LOCK_UN)}
+sub flock_		:method {CORE::flock(shift,shift)}
+sub set_flock	:method {
 	my $fh		= shift;
 	my $mode	= shift;
-	my $timeout	= shift;
-	if($timeout){
-		local $SIG{ALRM}	= sub {die('TIMEOUT')};
-		alarm($timeout);
-		flock_($fh,$mode);
-		alarm(0);
+	if( my $timeout = shift ){
+		eval {
+			local $SIG{ALRM}	= sub {die('TIMEOUT')};
+			alarm($timeout);
+			flock_($fh,$mode) || return;
+			alarm(0);
+		};
+		return	if($@);
 	}else{
-		flock_($fh,$mode);
+		flock_($fh,$mode) || return;
 	}
 	return $fh;
 }
@@ -74,9 +72,9 @@ IO::File::flock - extension of IO::File for flock
     # lock mode is automatically.
     $fh = new IO::File "> file" or die($!);
     # lock mode is LOCK_EX|LOCK_NB 
-    $fh = new IO::File "> file",'w',0666,LOCK_EX|LOCK_NB or die($!);
+    $fh = new IO::File "file",'>',LOCK_EX|LOCK_NB or die($!);
     # set timeout 5 second 
-    $fh = new IO::File "> file",undef,undef,undef,5;
+    $fh = new IO::File "file",'>',LOCK_EX,5;
     if($@ && $@ =~ /TIMEOUT/){
 		#timeout
 	}
@@ -95,7 +93,7 @@ C<IO::File::flock> inherits from C<IO::File>.
 
 =over 4
 
-=item new (FILENAME [,MODE [,PERMS [,LOCK_MODE [,TIMEOUT]]]);
+=item new (FILENAME [,MODE [,LOCK_MODE [,TIMEOUT]]]);
 
 creates a C<IO::File::flock>. 
 
@@ -105,9 +103,9 @@ creates a C<IO::File::flock>.
 
 =over 4
 
-=item open(FILENAME [,MODE [,PERMS [,LOCK_MODE [,TIMEOUT]]]);
+=item open(FILENAME [,MODE [,LOCK_MODE [,TIMEOUT]]]);
 
-$fh->open(FILENAME,MODE,PERMS) and $fh->flock(LOCK_MODE);
+$fh->open(FILENAME,MODE) and $fh->flock(LOCK_MODE);
 
 =item flock(LOCK_MODE);
 
@@ -129,7 +127,7 @@ $fh->flock(LOCK_UN);
 
 =head1 AUTHOR
 
-Shin Honda (makoto@cpan.jp)
+Shin Honda (makoto@cpan.org,makoto@cpan.jp)
 
 =head1 copyright
 
