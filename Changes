@@ -1,5 +1,7 @@
 Revision history for Perl extension IO::File::flock.
 
+0.06  2003/06/09
+	- open mode '+<' then lock_sh -> lock_ex
 0.05  2003/02/25
 	- document rewrite.
 0.04  2003/02/21
