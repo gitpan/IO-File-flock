@@ -4,7 +4,7 @@ use warnings;
 use base qw(IO::File Exporter);
 use Fcntl qw(:flock);
 use Carp;
-our $VERSION		= '0.04';
+our $VERSION		= '0.05';
 our $DEBUG			= 0;
 our @EXPORT			= qw();
 our %EXPORT_TAGS	= (
@@ -95,7 +95,7 @@ C<IO::File::flock> inherits from C<IO::File>.
 
 =over 4
 
-=item new (FILENAME [,MODE [,PERMS [,LOCK_MODE]]);
+=item new (FILENAME [,MODE [,PERMS [,LOCK_MODE [,TIMEOUT]]]);
 
 creates a C<IO::File::flock>. 
 
@@ -105,7 +105,7 @@ creates a C<IO::File::flock>.
 
 =over 4
 
-=item open(FILENAME [,MODE [,PERMS [,LOCK_MODE]]);
+=item open(FILENAME [,MODE [,PERMS [,LOCK_MODE [,TIMEOUT]]]);
 
 $fh->open(FILENAME,MODE,PERMS) and $fh->flock(LOCK_MODE);
 
