@@ -4,7 +4,7 @@ use warnings;
 use base qw(IO::File Exporter);
 use Fcntl qw(:flock);
 use Carp;
-our $VERSION		= '0.09';
+our $VERSION		= '0.10';
 our $DEBUG			= 0;
 our @EXPORT			= qw();
 our %EXPORT_TAGS	= (
@@ -46,9 +46,9 @@ sub set_flock	:method {
 	if( my $timeout = shift ){
 		eval {
 			local $SIG{ALRM}	= sub {die('TIMEOUT')};
-			alarm($timeout);
+			my $old = alarm($timeout);
 			flock_($fh,$mode) || return;
-			alarm(0);
+			alarm($old);
 		};
 		return	if($@);
 	}else{
@@ -127,11 +127,11 @@ $fh->flock(LOCK_UN);
 
 =head1 AUTHOR
 
-Shin Honda (makoto@cpan.org,makoto@cpan.jp)
+Shin Honda (makoto[at]cpan.org,makoto[at]cpan.jp)
 
 =head1 copyright
 
-Copyright (c) 2003 Shin Honda. All rights reserved.
+Copyright (c) 2003- Shin Honda. All rights reserved.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
