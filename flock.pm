@@ -1,40 +1,63 @@
 package IO::File::flock;
 use strict;
 use warnings;
-use Carp;
 use base qw(IO::File Exporter);
 use Fcntl qw(:flock);
-our $VERSION			= '0.03';
-our $DEBUG				= 0;
+use Carp;
+our $VERSION		= '0.04';
+our $DEBUG			= 0;
 our @EXPORT			= qw();
 our %EXPORT_TAGS	= (
 	'flock'		=> [qw(LOCK_SH LOCK_EX LOCK_NB LOCK_UN)]
 );
 our @EXPORT_OK		= ( map { @{$EXPORT_TAGS{$_}} } keys %EXPORT_TAGS );
 #####  override open method , add argument lock mode.
+sub class	{ref($_[0])||$_[0]||'IO::File::flock'}
+sub new		{(shift()->class->SUPER::new())->init(@_)}
+sub init	{shift()->open(@_)	if(@_ > 1);}
 sub open {
 	my $fh		= shift;
 	my $file	= shift || return;
-	$fh->SUPER::open($file,@_) or return;
-	$file		= IO::Handle::_open_mode_string($_[0]) . $file	if($_[0]);
-	my $lock	= (defined $_[1]) ? $_[1] : ($file =~ /^\+?>/) ? LOCK_EX : LOCK_SH;
-	$fh->flock($lock);
-	return $fh;
+	my $mode	= shift;
+	my $permit	= shift;
+	$file		= IO::Handle::_open_mode_string($mode) . $file	if($mode);
+
+	my @param;
+	push(@param,$file);
+	push(@param,$permit)	if($permit);
+	$fh->SUPER::open(@param) or return;
+
+	my $lock	= (defined $_[0]) ? $_[0] : ($file =~ /^\+?>/) ? LOCK_EX : LOCK_SH;
+	return $fh->flock($lock,$_[1]);
 }
 ##### flock oop i/f
-sub flock {
+sub flock :method {
 	my $fh		= shift;
 	my $lock	= shift;
+	my $timeout	= shift;
 	return $fh	unless($fh->opened);
-	CORE::flock($fh,$lock);
-	croak($@)	if($@);
-	printf STDERR "debug: flock(%s,%s)\n",$fh->fileno,$lock if($DEBUG);
+	return $fh->set_flock($lock,$timeout);
 	return $fh;
 }
 ##### flock easy i/f
 sub lock_sh		{shift()->flock(LOCK_SH)}
 sub lock_ex		{shift()->flock(LOCK_EX)}
 sub lock_un		{shift()->flock(LOCK_UN)}
+sub flock_		{CORE::flock(shift,shift)}
+sub set_flock {
+	my $fh		= shift;
+	my $mode	= shift;
+	my $timeout	= shift;
+	if($timeout){
+		local $SIG{ALRM}	= sub {die('TIMEOUT')};
+		alarm($timeout);
+		flock_($fh,$mode);
+		alarm(0);
+	}else{
+		flock_($fh,$mode);
+	}
+	return $fh;
+}
 1;
 __END__
 
@@ -52,6 +75,11 @@ IO::File::flock - extension of IO::File for flock
     $fh = new IO::File "> file" or die($!);
     # lock mode is LOCK_EX|LOCK_NB 
     $fh = new IO::File "> file",'w',0666,LOCK_EX|LOCK_NB or die($!);
+    # set timeout 5 second 
+    $fh = new IO::File "> file",undef,undef,undef,5;
+    if($@ && $@ =~ /TIMEOUT/){
+		#timeout
+	}
 
     $fh->lock_ex(); # if write mode (w or a or +> or > or >>) then default
     $fh->lock_sh(); # other then default

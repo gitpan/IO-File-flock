@@ -1,4 +1,7 @@
 Revision history for Perl extension IO::File::flock.
 
+0.04  2003/02/21
+	- bug fix
+	- add timeout parameter
 0.03  2003/02/21
 	- beta release

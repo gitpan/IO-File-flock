@@ -37,6 +37,7 @@ eval{$fh->close()};
 if($@){print "not ok 7\n";}
 else{print "ok 7\n";}
 
+unlink($file);
 ######################### End of black magic.
 
 # Insert your test code below (better if it prints "ok 13"
