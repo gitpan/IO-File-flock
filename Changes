@@ -1,6 +1,8 @@
 Revision history for Perl extension IO::File::flock.
 
-0.06  2003/06/09
+0.07  2003/06/10
+	- 0.06 is miss take upload file.
+0.06  2003/06/09 (deleted)
 	- open mode '+<' then lock_sh -> lock_ex
 0.05  2003/02/25
 	- document rewrite.

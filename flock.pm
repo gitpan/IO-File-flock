@@ -4,7 +4,7 @@ use warnings;
 use base qw(IO::File Exporter);
 use Fcntl qw(:flock);
 use Carp;
-our $VERSION		= '0.06';
+our $VERSION		= '0.07';
 our $DEBUG			= 0;
 our @EXPORT			= qw();
 our %EXPORT_TAGS	= (
@@ -27,7 +27,7 @@ sub open {
 	push(@param,$permit)	if($permit);
 	$fh->SUPER::open(@param) or return;
 
-	my $lock	= (defined $_[0]) ? $_[0] : ($file =~ /^\+?>|+</) ? LOCK_EX : LOCK_SH;
+	my $lock	= (defined $_[0]) ? $_[0] : ($file =~ /^(\+?>|\+<)/) ? LOCK_EX : LOCK_SH;
 	return $fh->flock($lock,$_[1]);
 }
 ##### flock oop i/f
